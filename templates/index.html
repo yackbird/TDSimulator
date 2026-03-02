@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>交易模拟器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .title {
+            color: #fff;
+            font-size: 28px;
+            font-weight: 600;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            margin-bottom: 20px;
+        }
+
+        .tabs {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .tab-btn {
+            padding: 12px 30px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+
+        .tab-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            border-color: transparent;
+            color: #fff;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .container {
+            display: flex;
+            gap: 40px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .slider-container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px 25px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .slider-label {
+            color: #fff;
+            font-size: 16px;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        .slider-wrapper {
+            position: relative;
+            height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .slider-track {
+            width: 20px;
+            height: 280px;
+            background: linear-gradient(to top, #e74c3c, #f39c12, #27ae60);
+            border-radius: 10px;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .slider-thumb {
+            width: 36px;
+            height: 36px;
+            background: #fff;
+            border-radius: 50%;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            cursor: grab;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            transition: transform 0.1s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .slider-thumb:active {
+            cursor: grabbing;
+            transform: translateX(-50%) scale(1.1);
+        }
+
+        .slider-thumb::after {
+            content: '';
+            width: 12px;
+            height: 12px;
+            background: #3498db;
+            border-radius: 50%;
+        }
+
+        .slider-scale {
+            position: absolute;
+            left: -50px;
+            height: 280px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 12px;
+        }
+
+        .current-price-display {
+            margin-top: 20px;
+            color: #fff;
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .panel-container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            min-width: 280px;
+        }
+
+        .panel-title {
+            color: #fff;
+            font-size: 18px;
+            margin-bottom: 25px;
+            font-weight: 500;
+            text-align: center;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .card:last-child {
+            margin-bottom: 0;
+        }
+
+        .card-label {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .card-value {
+            color: #fff;
+            font-size: 28px;
+            font-weight: 600;
+        }
+
+        .card-value.profit {
+            color: #27ae60;
+        }
+
+        .card-value.loss {
+            color: #e74c3c;
+        }
+
+        .card-subvalue {
+            font-size: 16px;
+            margin-top: 5px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-top: 25px;
+            align-items: center;
+        }
+
+        .input-group {
+            flex: 1;
+        }
+
+        .input-label {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 14px;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .price-input {
+            width: 100%;
+            padding: 12px 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            color: #fff;
+            font-size: 18px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .price-input:focus {
+            border-color: #3498db;
+        }
+
+        .reset-btn {
+            padding: 12px 25px;
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            border: none;
+            border-radius: 10px;
+            color: #fff;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            font-weight: 500;
+        }
+
+        .reset-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(52, 152, 219, 0.4);
+        }
+
+        .reset-btn:active {
+            transform: translateY(0);
+        }
+
+        .advanced-container {
+            display: flex;
+            gap: 30px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .chart-wrapper {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .chart-title {
+            color: #fff;
+            font-size: 16px;
+            margin-bottom: 15px;
+            font-weight: 500;
+            text-align: center;
+        }
+
+        .chart-canvas {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            cursor: crosshair;
+        }
+
+        .advanced-controls {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            min-width: 200px;
+        }
+
+        .control-row {
+            margin-bottom: 15px;
+        }
+
+        .control-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .hint-text {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 12px;
+            margin-top: 15px;
+            text-align: center;
+            line-height: 1.6;
+        }
+
+        .stats-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .stats-row:last-child {
+            border-bottom: none;
+        }
+
+        .stats-label {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 14px;
+        }
+
+        .stats-value {
+            color: #fff;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .stats-value.profit {
+            color: #27ae60;
+        }
+
+        .stats-value.loss {
+            color: #e74c3c;
+        }
+
+        .clear-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            border: none;
+            border-radius: 10px;
+            color: #fff;
+            font-size: 14px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            font-weight: 500;
+            margin-top: 15px;
+        }
+
+        .clear-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(231, 76, 60, 0.4);
+        }
+
+        .direction-toggle {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 15px;
+        }
+
+        .direction-btn {
+            flex: 1;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+
+        .direction-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .direction-btn.active-long {
+            background: linear-gradient(135deg, #27ae60, #2ecc71);
+            border-color: transparent;
+            color: #fff;
+        }
+
+        .direction-btn.active-short {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            border-color: transparent;
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1 class="title">交易模拟器</h1>
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="basic">基础模型</button>
+            <button class="tab-btn" data-tab="advanced">高级模型</button>
+        </div>
+    </div>
+
+    <div id="basic-tab" class="tab-content active">
+        <div class="container">
+            <div class="slider-container">
+                <div class="slider-label">价格调节器</div>
+                <div class="slider-wrapper">
+                    <div class="slider-scale">
+                        <span>450</span>
+                        <span>440</span>
+                        <span>430</span>
+                        <span>420</span>
+                        <span>410</span>
+                        <span>400</span>
+                    </div>
+                    <div class="slider-track" id="sliderTrack">
+                        <div class="slider-thumb" id="sliderThumb"></div>
+                    </div>
+                </div>
+                <div class="current-price-display">当前: <span id="currentPriceDisplay">420.00</span></div>
+            </div>
+
+            <div class="panel-container">
+                <div class="panel-title">权益面板</div>
+                
+                <div class="card">
+                    <div class="card-label">当前价格</div>
+                    <div class="card-value" id="priceValue">420.00</div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-label">盈亏</div>
+                    <div class="card-value" id="pnlPercent">+0.00%</div>
+                    <div class="card-subvalue card-value" id="pnlValue">+0.00</div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-label">权益比率</div>
+                    <div class="card-value" id="equityRatio">1.0000x</div>
+                </div>
+
+                <div class="controls">
+                    <div class="input-group">
+                        <label class="input-label">买入价格</label>
+                        <input type="number" class="price-input" id="buyPrice" value="420" step="0.01">
+                    </div>
+                    <button class="reset-btn" id="resetBtn">重置</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="advanced-tab" class="tab-content">
+        <div class="advanced-container">
+            <div class="chart-wrapper">
+                <div class="chart-title">价格走势 (在图表上划线)</div>
+                <canvas id="priceChart" class="chart-canvas" width="500" height="350"></canvas>
+            </div>
+
+            <div class="chart-wrapper">
+                <div class="chart-title">权益轨迹 (自动联动)</div>
+                <canvas id="equityChart" class="chart-canvas" width="500" height="350"></canvas>
+            </div>
+
+            <div class="advanced-controls">
+                <div class="panel-title">控制面板</div>
+                
+                <div class="direction-toggle">
+                    <button class="direction-btn active-long" id="longBtn" data-direction="long">买多</button>
+                    <button class="direction-btn" id="shortBtn" data-direction="short">卖空</button>
+                </div>
+
+                <div class="control-row">
+                    <label class="input-label">开仓价格</label>
+                    <input type="number" class="price-input" id="advBuyPrice" value="420" step="0.01">
+                </div>
+
+                <div class="stats-row">
+                    <span class="stats-label">当前价格</span>
+                    <span class="stats-value" id="advCurrentPrice">--</span>
+                </div>
+
+                <div class="stats-row">
+                    <span class="stats-label">当前权益</span>
+                    <span class="stats-value" id="advCurrentEquity">--</span>
+                </div>
+
+                <div class="stats-row">
+                    <span class="stats-label">最高权益</span>
+                    <span class="stats-value profit" id="advMaxEquity">--</span>
+                </div>
+
+                <div class="stats-row">
+                    <span class="stats-label">最低权益</span>
+                    <span class="stats-value loss" id="advMinEquity">--</span>
+                </div>
+
+                <div class="stats-row">
+                    <span class="stats-label">总收益率</span>
+                    <span class="stats-value" id="advTotalReturn">--</span>
+                </div>
+
+                <button class="clear-btn" id="clearChartBtn">清除画线</button>
+
+                <div class="hint-text">
+                    提示：在价格图表上按住鼠标左键划线，<br>
+                    权益图表会自动绘制对应的权益轨迹
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const MIN_PRICE = 400;
+        const MAX_PRICE = 450;
+        const DEFAULT_PRICE = 420;
+        const DEFAULT_BUY_PRICE = 420;
+
+        let currentPrice = DEFAULT_PRICE;
+        let buyPrice = DEFAULT_BUY_PRICE;
+        let isDragging = false;
+
+        const sliderTrack = document.getElementById('sliderTrack');
+        const sliderThumb = document.getElementById('sliderThumb');
+        const currentPriceDisplay = document.getElementById('currentPriceDisplay');
+        const priceValue = document.getElementById('priceValue');
+        const pnlPercent = document.getElementById('pnlPercent');
+        const pnlValue = document.getElementById('pnlValue');
+        const equityRatio = document.getElementById('equityRatio');
+        const buyPriceInput = document.getElementById('buyPrice');
+        const resetBtn = document.getElementById('resetBtn');
+
+        function updateThumbPosition() {
+            const trackHeight = sliderTrack.offsetHeight;
+            const thumbHeight = sliderThumb.offsetHeight;
+            const range = MAX_PRICE - MIN_PRICE;
+            const percentage = (currentPrice - MIN_PRICE) / range;
+            const maxTop = trackHeight - thumbHeight;
+            const top = maxTop - (percentage * maxTop);
+            sliderThumb.style.top = top + 'px';
+        }
+
+        function updateDisplay() {
+            const pnlPercentValue = ((currentPrice - buyPrice) / buyPrice) * 100;
+            const pnlAbsoluteValue = currentPrice - buyPrice;
+            const ratio = currentPrice / buyPrice;
+
+            currentPriceDisplay.textContent = currentPrice.toFixed(2);
+            priceValue.textContent = currentPrice.toFixed(2);
+            
+            const sign = pnlPercentValue >= 0 ? '+' : '';
+            pnlPercent.textContent = sign + pnlPercentValue.toFixed(2) + '%';
+            pnlValue.textContent = sign + pnlAbsoluteValue.toFixed(2);
+
+            if (pnlPercentValue > 0) {
+                pnlPercent.className = 'card-value profit';
+                pnlValue.className = 'card-subvalue card-value profit';
+            } else if (pnlPercentValue < 0) {
+                pnlPercent.className = 'card-value loss';
+                pnlValue.className = 'card-subvalue card-value loss';
+            } else {
+                pnlPercent.className = 'card-value';
+                pnlValue.className = 'card-subvalue card-value';
+            }
+
+            equityRatio.textContent = ratio.toFixed(4) + 'x';
+        }
+
+        function handleDrag(e) {
+            if (!isDragging) return;
+
+            const rect = sliderTrack.getBoundingClientRect();
+            const thumbHeight = sliderThumb.offsetHeight;
+            let clientY;
+
+            if (e.type.includes('touch')) {
+                clientY = e.touches[0].clientY;
+            } else {
+                clientY = e.clientY;
+            }
+
+            let relativeY = clientY - rect.top - thumbHeight / 2;
+            const maxTop = rect.height - thumbHeight;
+            
+            relativeY = Math.max(0, Math.min(relativeY, maxTop));
+            
+            const percentage = 1 - (relativeY / maxTop);
+            currentPrice = MIN_PRICE + percentage * (MAX_PRICE - MIN_PRICE);
+            currentPrice = Math.round(currentPrice * 100) / 100;
+
+            updateThumbPosition();
+            updateDisplay();
+        }
+
+        function startDrag(e) {
+            isDragging = true;
+            sliderThumb.style.cursor = 'grabbing';
+            handleDrag(e);
+        }
+
+        function endDrag() {
+            isDragging = false;
+            sliderThumb.style.cursor = 'grab';
+        }
+
+        sliderThumb.addEventListener('mousedown', startDrag);
+        sliderThumb.addEventListener('touchstart', startDrag, { passive: true });
+
+        document.addEventListener('mousemove', handleDrag);
+        document.addEventListener('touchmove', handleDrag, { passive: true });
+
+        document.addEventListener('mouseup', endDrag);
+        document.addEventListener('touchend', endDrag);
+
+        sliderTrack.addEventListener('click', (e) => {
+            if (e.target === sliderThumb) return;
+            
+            const rect = sliderTrack.getBoundingClientRect();
+            const thumbHeight = sliderThumb.offsetHeight;
+            let relativeY = e.clientY - rect.top - thumbHeight / 2;
+            const maxTop = rect.height - thumbHeight;
+            
+            relativeY = Math.max(0, Math.min(relativeY, maxTop));
+            
+            const percentage = 1 - (relativeY / maxTop);
+            currentPrice = MIN_PRICE + percentage * (MAX_PRICE - MIN_PRICE);
+            currentPrice = Math.round(currentPrice * 100) / 100;
+
+            updateThumbPosition();
+            updateDisplay();
+        });
+
+        buyPriceInput.addEventListener('input', (e) => {
+            const value = parseFloat(e.target.value);
+            if (!isNaN(value) && value > 0) {
+                buyPrice = value;
+                updateDisplay();
+            }
+        });
+
+        resetBtn.addEventListener('click', () => {
+            currentPrice = DEFAULT_PRICE;
+            buyPrice = DEFAULT_BUY_PRICE;
+            buyPriceInput.value = DEFAULT_BUY_PRICE;
+            updateThumbPosition();
+            updateDisplay();
+        });
+
+        updateThumbPosition();
+        updateDisplay();
+
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                
+                btn.classList.add('active');
+                const tabId = btn.dataset.tab + '-tab';
+                document.getElementById(tabId).classList.add('active');
+            });
+        });
+
+        const priceChart = document.getElementById('priceChart');
+        const equityChart = document.getElementById('equityChart');
+        const priceCtx = priceChart.getContext('2d');
+        const equityCtx = equityChart.getContext('2d');
+
+        const PADDING = 50;
+        const CHART_WIDTH = priceChart.width - PADDING * 2;
+        const CHART_HEIGHT = priceChart.height - PADDING * 2;
+
+        let advBuyPrice = DEFAULT_BUY_PRICE;
+        let pricePoints = [];
+        let equityPoints = [];
+        let isDrawing = false;
+        let maxEquity = 1;
+        let minEquity = 1;
+        let tradeDirection = 'long';
+
+        function calculateEquity(price) {
+            if (tradeDirection === 'long') {
+                return price / advBuyPrice;
+            } else {
+                return 2 - (price / advBuyPrice);
+            }
+        }
+
+        function drawGrid(ctx, canvas, yMin, yMax, yLabel, isEquity = false) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.lineWidth = 1;
+
+            for (let i = 0; i <= 5; i++) {
+                const y = PADDING + (CHART_HEIGHT / 5) * i;
+                ctx.beginPath();
+                ctx.moveTo(PADDING, y);
+                ctx.lineTo(canvas.width - PADDING, y);
+                ctx.stroke();
+            }
+
+            for (let i = 0; i <= 10; i++) {
+                const x = PADDING + (CHART_WIDTH / 10) * i;
+                ctx.beginPath();
+                ctx.moveTo(x, PADDING);
+                ctx.lineTo(x, canvas.height - PADDING);
+                ctx.stroke();
+            }
+
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(PADDING, PADDING);
+            ctx.lineTo(PADDING, canvas.height - PADDING);
+            ctx.lineTo(canvas.width - PADDING, canvas.height - PADDING);
+            ctx.stroke();
+
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+            ctx.font = '12px Segoe UI';
+            ctx.textAlign = 'right';
+
+            for (let i = 0; i <= 5; i++) {
+                const y = PADDING + (CHART_HEIGHT / 5) * i;
+                const value = yMax - ((yMax - yMin) / 5) * i;
+                ctx.fillText(value.toFixed(1), PADDING - 10, y + 4);
+            }
+
+            ctx.textAlign = 'center';
+            ctx.fillText(yLabel, canvas.width / 2, canvas.height - 10);
+        }
+
+        function drawPriceChart() {
+            drawGrid(priceCtx, priceChart, MIN_PRICE, MAX_PRICE, '价格');
+            
+            if (pricePoints.length < 2) return;
+
+            priceCtx.strokeStyle = '#3498db';
+            priceCtx.lineWidth = 3;
+            priceCtx.lineCap = 'round';
+            priceCtx.lineJoin = 'round';
+            priceCtx.beginPath();
+
+            pricePoints.forEach((point, index) => {
+                const x = PADDING + (point.x / CHART_WIDTH) * CHART_WIDTH;
+                const y = PADDING + ((MAX_PRICE - point.price) / (MAX_PRICE - MIN_PRICE)) * CHART_HEIGHT;
+                
+                if (index === 0) {
+                    priceCtx.moveTo(x, y);
+                } else {
+                    priceCtx.lineTo(x, y);
+                }
+            });
+
+            priceCtx.stroke();
+
+            priceCtx.strokeStyle = 'rgba(231, 76, 60, 0.5)';
+            priceCtx.lineWidth = 1;
+            priceCtx.setLineDash([5, 5]);
+            const buyY = PADDING + ((MAX_PRICE - advBuyPrice) / (MAX_PRICE - MIN_PRICE)) * CHART_HEIGHT;
+            priceCtx.beginPath();
+            priceCtx.moveTo(PADDING, buyY);
+            priceCtx.lineTo(priceChart.width - PADDING, buyY);
+            priceCtx.stroke();
+            priceCtx.setLineDash([]);
+
+            priceCtx.fillStyle = 'rgba(231, 76, 60, 0.8)';
+            priceCtx.font = '11px Segoe UI';
+            priceCtx.textAlign = 'left';
+            const priceLabel = tradeDirection === 'long' ? '买入价: ' : '开仓价: ';
+            priceCtx.fillText(priceLabel + advBuyPrice.toFixed(2), priceChart.width - PADDING + 5, buyY + 4);
+        }
+
+        function drawEquityChart() {
+            const equityMin = Math.min(0.8, minEquity);
+            const equityMax = Math.max(1.2, maxEquity);
+            
+            drawGrid(equityCtx, equityChart, equityMin, equityMax, '权益比率');
+            
+            if (equityPoints.length < 2) return;
+
+            equityCtx.strokeStyle = tradeDirection === 'long' ? '#27ae60' : '#e74c3c';
+            equityCtx.lineWidth = 3;
+            equityCtx.lineCap = 'round';
+            equityCtx.lineJoin = 'round';
+            equityCtx.beginPath();
+
+            equityPoints.forEach((point, index) => {
+                const x = PADDING + (point.x / CHART_WIDTH) * CHART_WIDTH;
+                const y = PADDING + ((equityMax - point.equity) / (equityMax - equityMin)) * CHART_HEIGHT;
+                
+                if (index === 0) {
+                    equityCtx.moveTo(x, y);
+                } else {
+                    equityCtx.lineTo(x, y);
+                }
+            });
+
+            equityCtx.stroke();
+
+            equityCtx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+            equityCtx.lineWidth = 1;
+            equityCtx.setLineDash([5, 5]);
+            const baseY = PADDING + ((equityMax - 1) / (equityMax - equityMin)) * CHART_HEIGHT;
+            equityCtx.beginPath();
+            equityCtx.moveTo(PADDING, baseY);
+            equityCtx.lineTo(equityChart.width - PADDING, baseY);
+            equityCtx.stroke();
+            equityCtx.setLineDash([]);
+
+            equityCtx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+            equityCtx.font = '11px Segoe UI';
+            equityCtx.textAlign = 'left';
+            equityCtx.fillText('基准: 1.00', equityChart.width - PADDING + 5, baseY + 4);
+        }
+
+        function updateStats() {
+            const advCurrentPriceEl = document.getElementById('advCurrentPrice');
+            const advCurrentEquityEl = document.getElementById('advCurrentEquity');
+            const advMaxEquityEl = document.getElementById('advMaxEquity');
+            const advMinEquityEl = document.getElementById('advMinEquity');
+            const advTotalReturnEl = document.getElementById('advTotalReturn');
+
+            if (pricePoints.length === 0) {
+                advCurrentPriceEl.textContent = '--';
+                advCurrentEquityEl.textContent = '--';
+                advMaxEquityEl.textContent = '--';
+                advMinEquityEl.textContent = '--';
+                advTotalReturnEl.textContent = '--';
+                return;
+            }
+
+            const lastPrice = pricePoints[pricePoints.length - 1].price;
+            const lastEquity = calculateEquity(lastPrice);
+            const totalReturn = ((lastEquity - 1) * 100);
+
+            advCurrentPriceEl.textContent = lastPrice.toFixed(2);
+            advCurrentEquityEl.textContent = lastEquity.toFixed(4) + 'x';
+            advMaxEquityEl.textContent = maxEquity.toFixed(4) + 'x';
+            advMinEquityEl.textContent = minEquity.toFixed(4) + 'x';
+
+            const sign = totalReturn >= 0 ? '+' : '';
+            advTotalReturnEl.textContent = sign + totalReturn.toFixed(2) + '%';
+            advTotalReturnEl.className = 'stats-value ' + (totalReturn >= 0 ? 'profit' : 'loss');
+        }
+
+        function getMousePos(canvas, e) {
+            const rect = canvas.getBoundingClientRect();
+            return {
+                x: e.clientX - rect.left,
+                y: e.clientY - rect.top
+            };
+        }
+
+        function yToPrice(y) {
+            const relativeY = y - PADDING;
+            const price = MAX_PRICE - (relativeY / CHART_HEIGHT) * (MAX_PRICE - MIN_PRICE);
+            return Math.max(MIN_PRICE, Math.min(MAX_PRICE, price));
+        }
+
+        function xToTime(x) {
+            return Math.max(0, Math.min(CHART_WIDTH, x - PADDING));
+        }
+
+        priceChart.addEventListener('mousedown', (e) => {
+            isDrawing = true;
+            pricePoints = [];
+            equityPoints = [];
+            maxEquity = 1;
+            minEquity = 1;
+            
+            const pos = getMousePos(priceChart, e);
+            if (pos.x >= PADDING && pos.x <= priceChart.width - PADDING &&
+                pos.y >= PADDING && pos.y <= priceChart.height - PADDING) {
+                const price = yToPrice(pos.y);
+                const time = xToTime(pos.x);
+                pricePoints.push({ x: time, price: price });
+                
+                const equity = calculateEquity(price);
+                equityPoints.push({ x: time, equity: equity });
+                maxEquity = Math.max(maxEquity, equity);
+                minEquity = Math.min(minEquity, equity);
+            }
+            
+            drawPriceChart();
+            drawEquityChart();
+            updateStats();
+        });
+
+        priceChart.addEventListener('mousemove', (e) => {
+            if (!isDrawing) return;
+            
+            const pos = getMousePos(priceChart, e);
+            if (pos.x >= PADDING && pos.x <= priceChart.width - PADDING &&
+                pos.y >= PADDING && pos.y <= priceChart.height - PADDING) {
+                const price = yToPrice(pos.y);
+                const time = xToTime(pos.x);
+                pricePoints.push({ x: time, price: price });
+                
+                const equity = calculateEquity(price);
+                equityPoints.push({ x: time, equity: equity });
+                maxEquity = Math.max(maxEquity, equity);
+                minEquity = Math.min(minEquity, equity);
+            }
+            
+            drawPriceChart();
+            drawEquityChart();
+            updateStats();
+        });
+
+        priceChart.addEventListener('mouseup', () => {
+            isDrawing = false;
+        });
+
+        priceChart.addEventListener('mouseleave', () => {
+            isDrawing = false;
+        });
+
+        document.getElementById('advBuyPrice').addEventListener('input', (e) => {
+            const value = parseFloat(e.target.value);
+            if (!isNaN(value) && value > 0) {
+                advBuyPrice = value;
+                
+                equityPoints = [];
+                maxEquity = 1;
+                minEquity = 1;
+                
+                pricePoints.forEach(point => {
+                    const equity = calculateEquity(point.price);
+                    equityPoints.push({ x: point.x, equity: equity });
+                    maxEquity = Math.max(maxEquity, equity);
+                    minEquity = Math.min(minEquity, equity);
+                });
+                
+                drawPriceChart();
+                drawEquityChart();
+                updateStats();
+            }
+        });
+
+        document.getElementById('longBtn').addEventListener('click', () => {
+            tradeDirection = 'long';
+            document.getElementById('longBtn').className = 'direction-btn active-long';
+            document.getElementById('shortBtn').className = 'direction-btn';
+            
+            equityPoints = [];
+            maxEquity = 1;
+            minEquity = 1;
+            
+            pricePoints.forEach(point => {
+                const equity = calculateEquity(point.price);
+                equityPoints.push({ x: point.x, equity: equity });
+                maxEquity = Math.max(maxEquity, equity);
+                minEquity = Math.min(minEquity, equity);
+            });
+            
+            drawPriceChart();
+            drawEquityChart();
+            updateStats();
+        });
+
+        document.getElementById('shortBtn').addEventListener('click', () => {
+            tradeDirection = 'short';
+            document.getElementById('shortBtn').className = 'direction-btn active-short';
+            document.getElementById('longBtn').className = 'direction-btn';
+            
+            equityPoints = [];
+            maxEquity = 1;
+            minEquity = 1;
+            
+            pricePoints.forEach(point => {
+                const equity = calculateEquity(point.price);
+                equityPoints.push({ x: point.x, equity: equity });
+                maxEquity = Math.max(maxEquity, equity);
+                minEquity = Math.min(minEquity, equity);
+            });
+            
+            drawPriceChart();
+            drawEquityChart();
+            updateStats();
+        });
+
+        document.getElementById('clearChartBtn').addEventListener('click', () => {
+            pricePoints = [];
+            equityPoints = [];
+            maxEquity = 1;
+            minEquity = 1;
+            drawPriceChart();
+            drawEquityChart();
+            updateStats();
+        });
+
+        drawPriceChart();
+        drawEquityChart();
+    </script>
+</body>
+</html>
