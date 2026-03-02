@@ -406,6 +406,82 @@
             border-color: transparent;
             color: #fff;
         }
+
+        .margin-slider-container {
+            margin-bottom: 15px;
+        }
+
+        .margin-slider-label {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 14px;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .margin-slider-wrapper {
+            position: relative;
+            padding: 10px 0;
+        }
+
+        .margin-slider-track {
+            width: 100%;
+            height: 8px;
+            background: linear-gradient(to right, #e74c3c, #f39c12, #27ae60);
+            border-radius: 4px;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .margin-slider-thumb {
+            width: 20px;
+            height: 20px;
+            background: #fff;
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: grab;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            transition: transform 0.1s;
+        }
+
+        .margin-slider-thumb:active {
+            cursor: grabbing;
+            transform: translateY(-50%) scale(1.2);
+        }
+
+        .margin-slider-scale {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 5px;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 11px;
+        }
+
+        .margin-info {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+        }
+
+        .margin-info-item {
+            text-align: center;
+        }
+
+        .margin-info-label {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 12px;
+        }
+
+        .margin-info-value {
+            color: #fff;
+            font-size: 16px;
+            font-weight: 600;
+            margin-top: 3px;
+        }
     </style>
 </head>
 <body>
@@ -490,6 +566,32 @@
                 <div class="control-row">
                     <label class="input-label">开仓价格</label>
                     <input type="number" class="price-input" id="advBuyPrice" value="420" step="0.01">
+                </div>
+
+                <div class="margin-slider-container">
+                    <label class="margin-slider-label">保证金率</label>
+                    <div class="margin-slider-wrapper">
+                        <div class="margin-slider-track" id="marginSliderTrack">
+                            <div class="margin-slider-thumb" id="marginSliderThumb"></div>
+                        </div>
+                        <div class="margin-slider-scale">
+                            <span>1%</span>
+                            <span>25%</span>
+                            <span>50%</span>
+                            <span>75%</span>
+                            <span>100%</span>
+                        </div>
+                    </div>
+                    <div class="margin-info">
+                        <div class="margin-info-item">
+                            <div class="margin-info-label">保证金率</div>
+                            <div class="margin-info-value" id="marginRateValue">10%</div>
+                        </div>
+                        <div class="margin-info-item">
+                            <div class="margin-info-label">对应杠杆</div>
+                            <div class="margin-info-value" id="leverageValue">10倍</div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="stats-row">
@@ -693,12 +795,16 @@
         let maxEquity = 1;
         let minEquity = 1;
         let tradeDirection = 'long';
+        let marginRate = 0.1;
 
         function calculateEquity(price) {
+            const leverage = 1 / marginRate;
+            const priceChange = (price - advBuyPrice) / advBuyPrice;
+            
             if (tradeDirection === 'long') {
-                return price / advBuyPrice;
+                return 1 + leverage * priceChange;
             } else {
-                return 2 - (price / advBuyPrice);
+                return 1 - leverage * priceChange;
             }
         }
 
@@ -1005,6 +1111,114 @@
             drawEquityChart();
             updateStats();
         });
+
+        const marginSliderTrack = document.getElementById('marginSliderTrack');
+        const marginSliderThumb = document.getElementById('marginSliderThumb');
+        const marginRateValueEl = document.getElementById('marginRateValue');
+        const leverageValueEl = document.getElementById('leverageValue');
+        let isMarginDragging = false;
+
+        function updateMarginSlider() {
+            const trackWidth = marginSliderTrack.offsetWidth;
+            const thumbWidth = marginSliderThumb.offsetWidth;
+            const minRate = 0.01;
+            const maxRate = 1.0;
+            const percentage = (marginRate - minRate) / (maxRate - minRate);
+            const maxLeft = trackWidth - thumbWidth;
+            const left = percentage * maxLeft;
+            marginSliderThumb.style.left = left + 'px';
+            
+            const leverage = 1 / marginRate;
+            marginRateValueEl.textContent = (marginRate * 100).toFixed(0) + '%';
+            leverageValueEl.textContent = leverage.toFixed(1) + '倍';
+        }
+
+        function handleMarginDrag(e) {
+            if (!isMarginDragging) return;
+            
+            const rect = marginSliderTrack.getBoundingClientRect();
+            const thumbWidth = marginSliderThumb.offsetWidth;
+            let clientX;
+            
+            if (e.type.includes('touch')) {
+                clientX = e.touches[0].clientX;
+            } else {
+                clientX = e.clientX;
+            }
+            
+            let relativeX = clientX - rect.left - thumbWidth / 2;
+            const maxLeft = rect.width - thumbWidth;
+            
+            relativeX = Math.max(0, Math.min(relativeX, maxLeft));
+            
+            const minRate = 0.01;
+            const maxRate = 1.0;
+            const percentage = relativeX / maxLeft;
+            marginRate = minRate + percentage * (maxRate - minRate);
+            marginRate = Math.round(marginRate * 100) / 100;
+            
+            updateMarginSlider();
+            recalculateEquity();
+        }
+
+        function recalculateEquity() {
+            equityPoints = [];
+            maxEquity = 1;
+            minEquity = 1;
+            
+            pricePoints.forEach(point => {
+                const equity = calculateEquity(point.price);
+                equityPoints.push({ x: point.x, equity: equity });
+                maxEquity = Math.max(maxEquity, equity);
+                minEquity = Math.min(minEquity, equity);
+            });
+            
+            drawPriceChart();
+            drawEquityChart();
+            updateStats();
+        }
+
+        function startMarginDrag(e) {
+            isMarginDragging = true;
+            marginSliderThumb.style.cursor = 'grabbing';
+            handleMarginDrag(e);
+        }
+
+        function endMarginDrag() {
+            isMarginDragging = false;
+            marginSliderThumb.style.cursor = 'grab';
+        }
+
+        marginSliderThumb.addEventListener('mousedown', startMarginDrag);
+        marginSliderThumb.addEventListener('touchstart', startMarginDrag, { passive: true });
+
+        document.addEventListener('mousemove', handleMarginDrag);
+        document.addEventListener('touchmove', handleMarginDrag, { passive: true });
+
+        document.addEventListener('mouseup', endMarginDrag);
+        document.addEventListener('touchend', endMarginDrag);
+
+        marginSliderTrack.addEventListener('click', (e) => {
+            if (e.target === marginSliderThumb) return;
+            
+            const rect = marginSliderTrack.getBoundingClientRect();
+            const thumbWidth = marginSliderThumb.offsetWidth;
+            let relativeX = e.clientX - rect.left - thumbWidth / 2;
+            const maxLeft = rect.width - thumbWidth;
+            
+            relativeX = Math.max(0, Math.min(relativeX, maxLeft));
+            
+            const minRate = 0.01;
+            const maxRate = 1.0;
+            const percentage = relativeX / maxLeft;
+            marginRate = minRate + percentage * (maxRate - minRate);
+            marginRate = Math.round(marginRate * 100) / 100;
+            
+            updateMarginSlider();
+            recalculateEquity();
+        });
+
+        updateMarginSlider();
 
         drawPriceChart();
         drawEquityChart();
