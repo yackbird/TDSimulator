@@ -482,6 +482,86 @@
             font-weight: 600;
             margin-top: 3px;
         }
+
+        .panel-wrapper {
+            position: relative;
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .panel-header .panel-title {
+            margin-bottom: 0;
+        }
+
+        .advanced-toggle-btn {
+            width: 30px;
+            height: 30px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .advanced-toggle-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
+        }
+
+        .advanced-panel {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 250px;
+            height: 100%;
+            background: rgba(26, 26, 46, 0.98);
+            backdrop-filter: blur(15px);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: -5px 0 30px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 10;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.3s ease;
+            pointer-events: none;
+        }
+
+        .advanced-panel.visible {
+            opacity: 1;
+            transform: translateX(0);
+            pointer-events: auto;
+        }
+
+        .advanced-panel-title {
+            color: #fff;
+            font-size: 16px;
+            margin-bottom: 20px;
+            font-weight: 500;
+            text-align: center;
+        }
+
+        .advanced-panel .direction-toggle {
+            margin-bottom: 20px;
+        }
+
+        .advanced-panel .margin-slider-container {
+            margin-bottom: 0;
+        }
+
+        .advanced-panel .margin-info {
+            margin-top: 15px;
+        }
     </style>
 </head>
 <body>
@@ -513,31 +593,71 @@
                 <div class="current-price-display">当前: <span id="currentPriceDisplay">420.00</span></div>
             </div>
 
-            <div class="panel-container">
-                <div class="panel-title">权益面板</div>
-                
-                <div class="card">
-                    <div class="card-label">当前价格</div>
-                    <div class="card-value" id="priceValue">420.00</div>
-                </div>
-                
-                <div class="card">
-                    <div class="card-label">盈亏</div>
-                    <div class="card-value" id="pnlPercent">+0.00%</div>
-                    <div class="card-subvalue card-value" id="pnlValue">+0.00</div>
-                </div>
-                
-                <div class="card">
-                    <div class="card-label">权益比率</div>
-                    <div class="card-value" id="equityRatio">1.0000x</div>
+            <div class="panel-wrapper">
+                <div class="panel-container">
+                    <div class="panel-header">
+                        <div class="panel-title">权益面板</div>
+                        <button class="advanced-toggle-btn" id="advancedToggleBtn">◀</button>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-label">当前价格</div>
+                        <div class="card-value" id="priceValue">420.00</div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-label">盈亏</div>
+                        <div class="card-value" id="pnlPercent">+0.00%</div>
+                        <div class="card-subvalue card-value" id="pnlValue">+0.00</div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-label">权益比率</div>
+                        <div class="card-value" id="equityRatio">1.0000x</div>
+                    </div>
+
+                    <div class="controls">
+                        <div class="input-group">
+                            <label class="input-label">买入价格</label>
+                            <input type="number" class="price-input" id="buyPrice" value="420" step="0.01">
+                        </div>
+                        <button class="reset-btn" id="resetBtn">重置</button>
+                    </div>
                 </div>
 
-                <div class="controls">
-                    <div class="input-group">
-                        <label class="input-label">买入价格</label>
-                        <input type="number" class="price-input" id="buyPrice" value="420" step="0.01">
+                <div class="advanced-panel" id="advancedPanel">
+                    <div class="advanced-panel-title">高级选项</div>
+                    
+                    <div class="direction-toggle">
+                        <button class="direction-btn active-long" id="basicLongBtn" data-direction="long">买多</button>
+                        <button class="direction-btn" id="basicShortBtn" data-direction="short">卖空</button>
                     </div>
-                    <button class="reset-btn" id="resetBtn">重置</button>
+
+                    <div class="margin-slider-container">
+                        <label class="margin-slider-label">保证金率</label>
+                        <div class="margin-slider-wrapper">
+                            <div class="margin-slider-track" id="basicMarginSliderTrack">
+                                <div class="margin-slider-thumb" id="basicMarginSliderThumb"></div>
+                            </div>
+                            <div class="margin-slider-scale">
+                                <span>1%</span>
+                                <span>25%</span>
+                                <span>50%</span>
+                                <span>75%</span>
+                                <span>100%</span>
+                            </div>
+                        </div>
+                        <div class="margin-info">
+                            <div class="margin-info-item">
+                                <div class="margin-info-label">保证金率</div>
+                                <div class="margin-info-value" id="basicMarginRateValue">10%</div>
+                            </div>
+                            <div class="margin-info-item">
+                                <div class="margin-info-label">对应杠杆</div>
+                                <div class="margin-info-value" id="basicLeverageValue">10倍</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -638,6 +758,8 @@
         let currentPrice = DEFAULT_PRICE;
         let buyPrice = DEFAULT_BUY_PRICE;
         let isDragging = false;
+        let basicMarginRate = 0.1;
+        let basicTradeDirection = 'long';
 
         const sliderTrack = document.getElementById('sliderTrack');
         const sliderThumb = document.getElementById('sliderThumb');
@@ -660,9 +782,18 @@
         }
 
         function updateDisplay() {
-            const pnlPercentValue = ((currentPrice - buyPrice) / buyPrice) * 100;
+            const leverage = 1 / basicMarginRate;
+            const priceChange = (currentPrice - buyPrice) / buyPrice;
+            
+            let equity;
+            if (basicTradeDirection === 'long') {
+                equity = 1 + leverage * priceChange;
+            } else {
+                equity = 1 - leverage * priceChange;
+            }
+            
+            const pnlPercentValue = (equity - 1) * 100;
             const pnlAbsoluteValue = currentPrice - buyPrice;
-            const ratio = currentPrice / buyPrice;
 
             currentPriceDisplay.textContent = currentPrice.toFixed(2);
             priceValue.textContent = currentPrice.toFixed(2);
@@ -682,7 +813,7 @@
                 pnlValue.className = 'card-subvalue card-value';
             }
 
-            equityRatio.textContent = ratio.toFixed(4) + 'x';
+            equityRatio.textContent = equity.toFixed(4) + 'x';
         }
 
         function handleDrag(e) {
@@ -767,6 +898,126 @@
 
         updateThumbPosition();
         updateDisplay();
+
+        const advancedToggleBtn = document.getElementById('advancedToggleBtn');
+        const advancedPanel = document.getElementById('advancedPanel');
+        const basicLongBtn = document.getElementById('basicLongBtn');
+        const basicShortBtn = document.getElementById('basicShortBtn');
+        const basicMarginSliderTrack = document.getElementById('basicMarginSliderTrack');
+        const basicMarginSliderThumb = document.getElementById('basicMarginSliderThumb');
+        const basicMarginRateValueEl = document.getElementById('basicMarginRateValue');
+        const basicLeverageValueEl = document.getElementById('basicLeverageValue');
+
+        let isBasicMarginDragging = false;
+
+        advancedToggleBtn.addEventListener('mouseenter', () => {
+            advancedPanel.classList.add('visible');
+            advancedToggleBtn.textContent = '◀';
+        });
+
+        advancedPanel.addEventListener('mouseleave', () => {
+            advancedPanel.classList.remove('visible');
+            advancedToggleBtn.textContent = '◀';
+        });
+
+        basicLongBtn.addEventListener('click', () => {
+            basicTradeDirection = 'long';
+            basicLongBtn.className = 'direction-btn active-long';
+            basicShortBtn.className = 'direction-btn';
+            updateDisplay();
+        });
+
+        basicShortBtn.addEventListener('click', () => {
+            basicTradeDirection = 'short';
+            basicShortBtn.className = 'direction-btn active-short';
+            basicLongBtn.className = 'direction-btn';
+            updateDisplay();
+        });
+
+        function updateBasicMarginSlider() {
+            const trackWidth = basicMarginSliderTrack.offsetWidth;
+            const thumbWidth = basicMarginSliderThumb.offsetWidth;
+            const minRate = 0.01;
+            const maxRate = 1.0;
+            const percentage = (basicMarginRate - minRate) / (maxRate - minRate);
+            const maxLeft = trackWidth - thumbWidth;
+            const left = percentage * maxLeft;
+            basicMarginSliderThumb.style.left = left + 'px';
+            
+            const leverage = 1 / basicMarginRate;
+            basicMarginRateValueEl.textContent = (basicMarginRate * 100).toFixed(0) + '%';
+            basicLeverageValueEl.textContent = leverage.toFixed(1) + '倍';
+        }
+
+        function handleBasicMarginDrag(e) {
+            if (!isBasicMarginDragging) return;
+            
+            const rect = basicMarginSliderTrack.getBoundingClientRect();
+            const thumbWidth = basicMarginSliderThumb.offsetWidth;
+            let clientX;
+            
+            if (e.type.includes('touch')) {
+                clientX = e.touches[0].clientX;
+            } else {
+                clientX = e.clientX;
+            }
+            
+            let relativeX = clientX - rect.left - thumbWidth / 2;
+            const maxLeft = rect.width - thumbWidth;
+            
+            relativeX = Math.max(0, Math.min(relativeX, maxLeft));
+            
+            const minRate = 0.01;
+            const maxRate = 1.0;
+            const percentage = relativeX / maxLeft;
+            basicMarginRate = minRate + percentage * (maxRate - minRate);
+            basicMarginRate = Math.round(basicMarginRate * 100) / 100;
+            
+            updateBasicMarginSlider();
+            updateDisplay();
+        }
+
+        function startBasicMarginDrag(e) {
+            isBasicMarginDragging = true;
+            basicMarginSliderThumb.style.cursor = 'grabbing';
+            handleBasicMarginDrag(e);
+        }
+
+        function endBasicMarginDrag() {
+            isBasicMarginDragging = false;
+            basicMarginSliderThumb.style.cursor = 'grab';
+        }
+
+        basicMarginSliderThumb.addEventListener('mousedown', startBasicMarginDrag);
+        basicMarginSliderThumb.addEventListener('touchstart', startBasicMarginDrag, { passive: true });
+
+        document.addEventListener('mousemove', handleBasicMarginDrag);
+        document.addEventListener('touchmove', handleBasicMarginDrag, { passive: true });
+
+        document.addEventListener('mouseup', endBasicMarginDrag);
+        document.addEventListener('touchend', endBasicMarginDrag);
+
+        basicMarginSliderTrack.addEventListener('click', (e) => {
+            if (e.target === basicMarginSliderThumb) return;
+            
+            const rect = basicMarginSliderTrack.getBoundingClientRect();
+            const thumbWidth = basicMarginSliderThumb.offsetWidth;
+            let relativeX = e.clientX - rect.left - thumbWidth / 2;
+            const maxLeft = rect.width - thumbWidth;
+            
+            relativeX = Math.max(0, Math.min(relativeX, maxLeft));
+            
+            const minRate = 0.01;
+            const maxRate = 1.0;
+            const percentage = relativeX / maxLeft;
+            basicMarginRate = minRate + percentage * (maxRate - minRate);
+            basicMarginRate = Math.round(basicMarginRate * 100) / 100;
+            
+            updateBasicMarginSlider();
+            updateDisplay();
+        });
+
+        updateBasicMarginSlider();
 
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', () => {
